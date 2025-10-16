@@ -4,55 +4,95 @@ import (
 	"crypto/rand"
 	"fmt"
 	"log"
+	"os"
 
 	"github.com/edgelesssys/ego/ecrypto"
 	"github.com/edgelesssys/estore"
 )
 
+//	Plans:
+// 1) CLI-Interface(+)
+// 2) Persisted Encryption key(+)
+// 3) API or REST-Wrapping
+// 4) Kubernetes
+
+func getOrCreateKey(path string) []byte {
+	if data, err := os.ReadFile(path); err == nil { // file by path exists ==>
+		key, err := ecrypto.Unseal(data, nil) // ==> decrypt
+		if err != nil {
+			log.Fatalf("failed to unseal existing key: %v", err)
+		}
+		return key
+	}
+	//not exists ==>
+	key := make([]byte, 32) //==> create new one for 256-bit
+	if _, err := rand.Read(key); err != nil {
+		log.Fatalf("failed to generate key: %v", err)
+	}
+	sealedVal, err := ecrypto.SealWithProductKey(key, nil) //key for device
+	if err != nil {
+		log.Fatalf("failed to seal key: %v", err)
+	}
+
+	if err := os.WriteFile("/mnt/key.bin", sealedVal, 0600); err != nil { //rw owner-only
+		log.Fatalf("failed to save sealed key: %v", err)
+	}
+
+	fmt.Println("🗝🗝🗝  New encryption key created and sealed.")
+	return key
+}
+
 func main() {
-	//	Plans:
-	// 1) CLI-Interface
-	// 2) Persisted Encryption key
-	// 3) API or REST-Wrapping
-	// 4) Kubernetes
-	encryptionKey := make([]byte, 32)
-	if _, err := rand.Read(encryptionKey); err != nil {
-		log.Fatalf("failed to generate encryption key: %v", err)
+	if len(os.Args) < 2 {
+		fmt.Println("Usage:")
+		fmt.Println("  ego run sec_storage put <key> <value>")
+		fmt.Println("  ego run sec_storage get <key>")
+		os.Exit(1)
 	}
 
-	opts := &estore.Options{
-		EncryptionKey: encryptionKey,
-	}
-
-	store, err := estore.Open("users", opts)
+	cmnd := os.Args[1]
+	encKey := getOrCreateKey("/mnt/key.bin")
+	opts := &estore.Options{EncryptionKey: encKey}
+	storage, err := estore.Open("/mnt/users", opts)
 	if err != nil {
 		log.Fatalf("failed to open store: %v", err)
 	}
-	defer store.Close()
+	defer storage.Close() // close opened in ending
 
-	key := []byte("username")
-	value := []byte("alex")
+	switch cmnd {
+	case "put":
+		if len(os.Args) < 4 { //check input length in arguments
+			log.Fatal("Usage: ego run sec_storage put <key> <value>")
+		}
+		key := []byte(os.Args[2])
+		val := []byte(os.Args[3])
+		sealedVal, err := ecrypto.SealWithUniqueKey(val, nil) //one-time sealing
+		if err != nil {
+			log.Fatalf("failed to seal value: %v", err)
+		}
+		if err := storage.Set(key, sealedVal, nil); err != nil {
+			log.Fatalf("failed to store value: %v", err)
+		}
+		fmt.Println("👉👉👉 Value stored securely ")
 
-	sealed, err := ecrypto.SealWithUniqueKey(value, nil)
-	if err != nil {
-		log.Fatalf("failed to seal value: %v", err)
+	case "get":
+		if len(os.Args) < 3 { //check input length in arguments
+			log.Fatal("Usage: ego run sec_storage get <key>")
+		}
+		key := []byte(os.Args[2])
+		retVal, closerVal, err := storage.Get(key)
+		if err != nil {
+			log.Fatalf("failed to read value: %v", err)
+		}
+		defer closerVal.Close() //close descriptor in ending
+
+		unsealedVal, err := ecrypto.Unseal(retVal, nil)
+		if err != nil {
+			log.Fatalf("failed to unseal value: %v", err)
+		}
+		fmt.Println("🔓🔓🔓 Decrypted value:", string(unsealedVal))
+
+	default:
+		log.Fatalf("unknown command: %s", cmnd)
 	}
-
-	if err := store.Set(key, sealed, nil); err != nil {
-		log.Fatalf("failed to store value: %v", err)
-	}
-	fmt.Println("✅ Encrypted value saved!")
-
-	retrieved, closer, err := store.Get(key)
-	if err != nil {
-		log.Fatalf("failed to read value: %v", err)
-	}
-	defer closer.Close()
-
-	unsealed, err := ecrypto.Unseal(retrieved, nil)
-	if err != nil {
-		log.Fatalf("failed to unseal value: %v", err)
-	}
-
-	fmt.Println("🔓 Decrypted value:", string(unsealed))
 }
