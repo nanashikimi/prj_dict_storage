@@ -1,0 +1,42 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ego-secstore
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: ego-secstore
+  template:
+    metadata:
+      labels:
+        app: ego-secstore
+    spec:
+      containers:
+        - name: ego-secstore
+          image: ego-storage:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 8080
+          env:
+            - name: OE_SIMULATION
+              value: "1"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - "ALL"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: ego-secstore-service
+spec:
+  selector:
+    app: ego-secstore
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+  type: NodePort
+

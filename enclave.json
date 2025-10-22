@@ -5,16 +5,6 @@
   "heapSize": 512,
   "executableHeap": false,
   "productID": 1,
-  "securityVersion": 1,
-  "mounts": [
-    {
-      "source": "/home/alex/prj_dict_storage",
-      "target": "/mnt",
-      "type": "hostfs",
-      "readOnly": false
-    }
-  ],
-  "env": null,
-  "files": null
+  "securityVersion": 1
 }
 

@@ -1,0 +1,12 @@
+# Используем официальный образ EGo с рантаймом
+FROM ghcr.io/edgelesssys/ego-deploy:latest
+
+# Устанавливаем рабочую директорию
+WORKDIR /app
+
+# Копируем бинарь и конфигурацию enclave
+COPY sec_storage .
+COPY enclave.json .
+
+# Указываем, что EGo должен запустить приложение
+CMD ["ego", "run", "./sec_storage"]

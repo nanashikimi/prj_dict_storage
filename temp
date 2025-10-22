@@ -1,0 +1,20 @@
+{
+  "exe": "sec_storage",
+  "key": "private.pem",
+  "debug": true,
+  "heapSize": 512,
+  "executableHeap": false,
+  "productID": 1,
+  "securityVersion": 1,
+  "mounts": [
+    {
+      "source": "/mnt",
+      "target": "/mnt",
+      "type": "hostfs",
+      "readOnly": false
+    }
+  ],
+  "env": null,
+  "files": null
+}
+
