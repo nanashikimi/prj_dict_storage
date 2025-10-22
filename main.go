@@ -18,7 +18,8 @@ import (
 // 1) CLI-Interface(+)
 // 2) Persisted Encryption key(+)
 // 3) API or REST-Wrapping(+) (DELETE and GET in future)
-// 4) Kubernetes
+// 4) Kubernetes(+)
+// 5) MarbleRun for Kubernetes
 
 func getOrCreateKey(path string) []byte {
 	dir := filepath.Dir(path)
