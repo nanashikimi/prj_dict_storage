@@ -1,0 +1,9 @@
+1)Create Handlers for DELETE, REST and PUT(because now /put works with POST)
+
+2) Kubernetes with MarbleRun
+
+3) Correct a code issue with JSON
+
+4) Create and test nix
+
+5) Create README afterall
