@@ -4,6 +4,10 @@
 
 3) Correct a code issue with JSON
 
-4) Create and test nix
+4) Improve nix
 
-5) Create README afterall
+5) Create and renew README afterall
+
+6) Curl tests for bash or unit tests on Go(or both)
+
+7) Installing ego/ego-go with makefile or nix
